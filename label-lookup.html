@@ -35,7 +35,7 @@
   h1{margin:0;font-size:19px;letter-spacing:.16em;font-weight:700}
   .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--ink-soft)}
 
-  nav{display:flex;gap:0;margin:0 0 18px;border-bottom:1px solid var(--rule)}
+  nav{display:flex;margin:0 0 18px;border-bottom:1px solid var(--rule)}
   nav button{
     flex:1;appearance:none;border:0;background:none;
     font-family:var(--mono);font-size:12px;letter-spacing:.12em;
@@ -70,23 +70,23 @@
   input:focus{outline:0;border-bottom-color:var(--stamp)}
   .field{margin-bottom:20px}
   .field.small input{font-size:17px;letter-spacing:.06em}
+  .pair{display:flex;gap:14px}
+  .pair .field{flex:1}
 
   .btn{
     width:100%;appearance:none;border:2px solid var(--ink);background:var(--ink);
     color:#f4f8fa;font-family:var(--mono);font-size:14px;letter-spacing:.2em;
     padding:14px;cursor:pointer;border-radius:0;
   }
-  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn.ghost{background:transparent;color:var(--ink);margin-top:10px}
   .btn:active{transform:translateY(1px)}
   .btn:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
 
   .result{margin-top:22px}
-  .shot{
-    width:100%;background:#fff;border:1px solid var(--rule);
-    display:block;
-  }
-  .meta{display:flex;gap:12px;align-items:flex-start;margin-top:12px;padding-bottom:4px}
-  .meta .name{font-size:18px;font-weight:700;line-height:1.4;flex:1}
+  .shots{display:flex;flex-direction:column;gap:8px}
+  .shot{width:100%;background:#fff;border:1px solid var(--rule);display:block}
+  .meta{display:flex;gap:10px;align-items:flex-start;margin-top:12px;flex-wrap:wrap}
+  .meta .name{font-size:18px;font-weight:700;line-height:1.4;flex:1;min-width:60%}
   .shelf{
     font-family:var(--mono);font-size:20px;letter-spacing:.1em;
     border:2px solid var(--ink);padding:5px 10px;white-space:nowrap;
@@ -105,43 +105,43 @@
   @keyframes press{from{transform:rotate(-9deg) scale(1.5);opacity:0}to{transform:rotate(-9deg) scale(1);opacity:.9}}
   @media (prefers-reduced-motion:reduce){.stamp{animation:none}}
 
-  .empty{
-    font-size:14px;line-height:1.9;color:var(--ink-soft);
-    padding:26px 2px;
-  }
+  .empty{font-size:14px;line-height:1.9;color:var(--ink-soft);padding:26px 2px}
   .empty b{color:var(--ink)}
 
-  .row{
-    display:flex;gap:12px;align-items:center;
-    padding:11px 0;border-bottom:1px solid var(--rule);
-  }
+  .row{display:flex;gap:10px;align-items:center;padding:11px 0;border-bottom:1px solid var(--rule)}
   .row img{width:52px;height:52px;object-fit:cover;background:#fff;border:1px solid var(--rule);flex:none}
   .row .t{flex:1;min-width:0}
   .row .t b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-  .row .t span{font-family:var(--mono);font-size:11px;color:var(--ink-soft);letter-spacing:.1em}
+  .row .t span{font-family:var(--mono);font-size:11px;color:var(--ink-soft);letter-spacing:.08em;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
   .row button{
     appearance:none;border:1px solid var(--rule);background:none;color:var(--ink-soft);
-    font-family:var(--mono);font-size:11px;padding:6px 9px;cursor:pointer;border-radius:0;
+    font-family:var(--mono);font-size:11px;padding:6px 8px;cursor:pointer;border-radius:0;flex:none;
   }
 
+  .shotpair{display:flex;gap:10px;margin-bottom:8px}
+  .shotslot{flex:1}
   .preview{
-    width:100%;aspect-ratio:4/3;border:1px dashed var(--rule);background:#fff;
+    width:100%;aspect-ratio:3/4;border:1px dashed var(--rule);background:#fff;
     display:flex;align-items:center;justify-content:center;
-    font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--ink-soft);
-    overflow:hidden;margin-bottom:8px;
+    font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:var(--ink-soft);
+    overflow:hidden;
   }
   .preview img{width:100%;height:100%;object-fit:contain}
-  .pick{display:block;text-align:center;margin-bottom:22px}
+  .pick{display:block;text-align:center;margin-top:6px}
   .pick input{position:absolute;width:1px;height:1px;opacity:0}
   .pick .lbl{
-    display:inline-block;border:2px solid var(--ink);padding:11px 22px;
-    font-family:var(--mono);font-size:13px;letter-spacing:.16em;cursor:pointer;
+    display:block;border:2px solid var(--ink);padding:9px 4px;
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;cursor:pointer;
   }
   .pick input:focus-visible + .lbl{outline:2px solid var(--stamp);outline-offset:2px}
+  .editing{
+    font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--stamp);
+    margin-bottom:10px;
+  }
   .toast{
     position:fixed;left:14px;right:14px;bottom:calc(18px + env(safe-area-inset-bottom));
     background:var(--ok);color:#fff;font-size:14px;padding:13px 15px;
-    text-align:center;letter-spacing:.06em;
+    text-align:center;letter-spacing:.06em;z-index:9;
   }
   [hidden]{display:none !important}
 </style>
@@ -164,7 +164,7 @@
   <div class="slip">
     <div id="findStamp"></div>
     <div class="field">
-      <label for="q">商品コード / 商品名</label>
+      <label for="q">商品コード / JAN / 商品名</label>
       <input type="search" id="q" placeholder="コードを入力" autocomplete="off"
              autocapitalize="characters" enterkeyhint="search">
     </div>
@@ -175,25 +175,49 @@
 
 <!-- 登録 -->
 <section id="v-add" hidden>
-  <div class="preview" id="prev">写真なし</div>
-  <div class="pick">
-    <input type="file" id="file" accept="image/*" capture="environment">
-    <label class="lbl" for="file">写真を撮る / 選ぶ</label>
+  <div class="editing" id="editing" hidden></div>
+  <div class="shotpair">
+    <div class="shotslot">
+      <div class="preview" id="prev1">写真1 なし</div>
+      <div class="pick">
+        <input type="file" id="file1" accept="image/*" capture="environment">
+        <label class="lbl" for="file1">写真1</label>
+      </div>
+    </div>
+    <div class="shotslot">
+      <div class="preview" id="prev2">写真2 なし</div>
+      <div class="pick">
+        <input type="file" id="file2" accept="image/*" capture="environment">
+        <label class="lbl" for="file2">写真2</label>
+      </div>
+    </div>
   </div>
-  <div class="slip">
+
+  <div class="slip" style="margin-top:16px">
     <div class="field small">
       <label for="a-code">商品コード（必須）</label>
       <input type="text" id="a-code" autocomplete="off" autocapitalize="characters">
     </div>
     <div class="field small">
+      <label for="a-jan">JANコード</label>
+      <input type="text" id="a-jan" inputmode="numeric" autocomplete="off">
+    </div>
+    <div class="field small">
       <label for="a-name">商品名</label>
       <input type="text" id="a-name" autocomplete="off">
     </div>
-    <div class="field small">
-      <label for="a-shelf">棚番</label>
-      <input type="text" id="a-shelf" placeholder="B-3" autocomplete="off" autocapitalize="characters">
+    <div class="pair">
+      <div class="field small">
+        <label for="a-shelf1">棚番1</label>
+        <input type="text" id="a-shelf1" placeholder="B-3" autocomplete="off" autocapitalize="characters">
+      </div>
+      <div class="field small">
+        <label for="a-shelf2">棚番2</label>
+        <input type="text" id="a-shelf2" placeholder="D-1" autocomplete="off" autocapitalize="characters">
+      </div>
     </div>
     <button class="btn" id="save">保 存</button>
+    <button class="btn ghost" id="clear">入力をクリア</button>
   </div>
 </section>
 
@@ -204,11 +228,18 @@
 
 <script>
 const $ = s => document.querySelector(s);
-let db, pendingBlob = null, urls = [];
+let db, blob1 = null, blob2 = null, urls = [];
 
 function freeUrls(){ urls.forEach(URL.revokeObjectURL); urls = []; }
 function objUrl(b){ const u = URL.createObjectURL(b); urls.push(u); return u; }
 const norm = s => (s||'').trim().toUpperCase();
+const esc = s => (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+/* 旧データ（image / shelf）も読めるようにする */
+function img1(i){ return i.image1 || i.image || null; }
+function img2(i){ return i.image2 || null; }
+function sh1(i){ return i.shelf1 || i.shelf || ''; }
+function sh2(i){ return i.shelf2 || ''; }
 
 /* ---- storage ---- */
 function open(){
@@ -226,6 +257,7 @@ function tx(mode){ return db.transaction('items',mode).objectStore('items'); }
 function put(item){ return new Promise((res,rej)=>{ const r=tx('readwrite').put(item); r.onsuccess=res; r.onerror=()=>rej(r.error); }); }
 function del(code){ return new Promise(res=>{ tx('readwrite').delete(code).onsuccess=res; }); }
 function all(){ return new Promise(res=>{ const r=tx('readonly').getAll(); r.onsuccess=()=>res(r.result||[]); }); }
+function get(code){ return new Promise(res=>{ const r=tx('readonly').get(code); r.onsuccess=()=>res(r.result||null); }); }
 
 /* ---- image shrink ---- */
 async function shrink(file, max=1400){
@@ -253,8 +285,7 @@ Object.keys(views).forEach(k => $(views[k][0]).onclick = () => show(k));
 /* ---- find ---- */
 async function find(){
   const q = norm($('#q').value);
-  const stamp = $('#findStamp');
-  const out = $('#result');
+  const stamp = $('#findStamp'), out = $('#result');
   stamp.innerHTML = ''; out.innerHTML = ''; freeUrls();
   if(!q) return;
 
@@ -263,8 +294,9 @@ async function find(){
     out.innerHTML = '<p class="empty">まだ1件も登録がありません。<br><b>登録</b>タブで、ラベルの写真と商品コードを追加してください。</p>';
     return;
   }
-  const exact = items.find(i => norm(i.code) === q);
-  const hits = exact ? [exact] : items.filter(i => norm(i.code).includes(q) || norm(i.name).includes(q));
+  const exact = items.find(i => norm(i.code)===q || norm(i.jan)===q);
+  const hits = exact ? [exact] : items.filter(i =>
+    norm(i.code).includes(q) || norm(i.jan).includes(q) || norm(i.name).includes(q));
 
   if(!hits.length){
     stamp.innerHTML = '<span class="stamp miss">該当なし</span>';
@@ -280,41 +312,82 @@ async function find(){
   }
 }
 function card(i){
-  const img = i.image ? '<img class="shot" alt="' + esc(i.name||i.code) + 'のラベル" src="' + objUrl(i.image) + '">' : '';
-  return img +
-    '<div class="meta"><div class="name">' + esc(i.name || '（商品名なし）') + '</div>' +
-    (i.shelf ? '<div class="shelf">' + esc(i.shelf) + '</div>' : '') + '</div>' +
-    '<div class="code-line">' + esc(i.code) + '</div>';
+  const shots = [img1(i), img2(i)].filter(Boolean)
+    .map(b => '<img class="shot" alt="' + esc(i.name||i.code) + 'のラベル" src="' + objUrl(b) + '">').join('');
+  const shelves = [sh1(i), sh2(i)].filter(Boolean)
+    .map(s => '<div class="shelf">' + esc(s) + '</div>').join('');
+  return (shots ? '<div class="shots">' + shots + '</div>' : '') +
+    '<div class="meta"><div class="name">' + esc(i.name || '（商品名なし）') + '</div>' + shelves + '</div>' +
+    '<div class="code-line">' + esc(i.code) + (i.jan ? ' ・ JAN ' + esc(i.jan) : '') + '</div>';
 }
 function row(i){
-  const th = i.image ? '<img alt="" src="' + objUrl(i.image) + '">' : '<img alt="">';
+  const b = img1(i);
+  const th = b ? '<img alt="" src="' + objUrl(b) + '">' : '<img alt="">';
+  const shelves = [sh1(i), sh2(i)].filter(Boolean).join(' / ');
   return '<div class="row">' + th +
     '<div class="t"><b>' + esc(i.name || '（商品名なし）') + '</b>' +
-    '<span>' + esc(i.code) + (i.shelf ? ' ・ ' + esc(i.shelf) : '') + '</span></div>' +
+    '<span>' + esc(i.code) + (i.jan ? ' ・ ' + esc(i.jan) : '') + (shelves ? ' ・ ' + esc(shelves) : '') + '</span></div>' +
+    '<button data-edit="' + esc(i.code) + '">編集</button>' +
     '<button data-del="' + esc(i.code) + '">削除</button></div>';
 }
-function esc(s){ return (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 
 $('#go').onclick = find;
 $('#q').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); find(); }});
 
-/* ---- add ---- */
-$('#file').onchange = async e => {
-  const f = e.target.files[0];
-  if(!f) return;
-  pendingBlob = await shrink(f);
-  $('#prev').innerHTML = '<img alt="選んだラベル写真" src="' + objUrl(pendingBlob) + '">';
+/* ---- add / edit ---- */
+$('#file1').onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  blob1 = await shrink(f);
+  $('#prev1').innerHTML = '<img alt="写真1" src="' + objUrl(blob1) + '">';
 };
+$('#file2').onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  blob2 = await shrink(f);
+  $('#prev2').innerHTML = '<img alt="写真2" src="' + objUrl(blob2) + '">';
+};
+
+function resetForm(){
+  blob1 = blob2 = null;
+  $('#prev1').textContent = '写真1 なし';
+  $('#prev2').textContent = '写真2 なし';
+  ['#a-code','#a-jan','#a-name','#a-shelf1','#a-shelf2'].forEach(s => $(s).value = '');
+  $('#file1').value = ''; $('#file2').value = '';
+  $('#editing').hidden = true;
+}
+$('#clear').onclick = resetForm;
+
 $('#save').onclick = async () => {
   const code = $('#a-code').value.trim();
   if(!code){ toast('商品コードを入力してください'); $('#a-code').focus(); return; }
-  await put({ code, name:$('#a-name').value.trim(), shelf:$('#a-shelf').value.trim(), image:pendingBlob });
+  await put({
+    code,
+    jan: $('#a-jan').value.trim(),
+    name: $('#a-name').value.trim(),
+    shelf1: $('#a-shelf1').value.trim(),
+    shelf2: $('#a-shelf2').value.trim(),
+    image1: blob1,
+    image2: blob2
+  });
   toast(code + ' を保存しました');
-  pendingBlob = null;
-  $('#prev').textContent = '写真なし';
-  ['#a-code','#a-name','#a-shelf'].forEach(s => $(s).value = '');
-  $('#file').value = '';
+  resetForm();
 };
+
+async function loadForEdit(code){
+  const i = await get(code);
+  if(!i){ toast('見つかりません'); return; }
+  blob1 = img1(i); blob2 = img2(i);
+  $('#prev1').innerHTML = blob1 ? '<img alt="写真1" src="' + objUrl(blob1) + '">' : '写真1 なし';
+  $('#prev2').innerHTML = blob2 ? '<img alt="写真2" src="' + objUrl(blob2) + '">' : '写真2 なし';
+  $('#a-code').value = i.code;
+  $('#a-jan').value = i.jan || '';
+  $('#a-name').value = i.name || '';
+  $('#a-shelf1').value = sh1(i);
+  $('#a-shelf2').value = sh2(i);
+  $('#editing').textContent = '編集中：' + i.code;
+  $('#editing').hidden = false;
+  show('add');
+  window.scrollTo(0,0);
+}
 
 /* ---- list ---- */
 async function renderList(){
@@ -331,6 +404,7 @@ function bindRows(){
     toast('削除しました');
     renderList();
   });
+  document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => loadForEdit(b.dataset.edit));
 }
 
 /* ---- toast ---- */
@@ -345,7 +419,7 @@ function toast(msg){
 
 /* ---- boot ---- */
 open().then(d => { db = d; }).catch(() => {
-  document.body.innerHTML = '<p class="empty" style="padding:40px 14px">この画面ではデータを保存できません。ファイルを直接開くか、公開したURLからアクセスしてください。</p>';
+  document.body.innerHTML = '<p class="empty" style="padding:40px 14px">この画面ではデータを保存できません。公開したURLからアクセスしてください。</p>';
 });
 </script>
 </body>
