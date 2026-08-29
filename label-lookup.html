@@ -88,15 +88,23 @@
     width:100%;max-height:44vh;object-fit:contain;
     background:#fff;border:1px solid var(--rule);display:block;
   }
-  .shelves{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .shelf-label{
+    font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.2em;
+    color:var(--ink);margin-bottom:7px;
+  }
+  .shelves{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px}
   .shelf{
     font-family:var(--mono);font-size:38px;font-weight:700;letter-spacing:.06em;
     border:3px solid var(--ink);padding:6px 18px;white-space:nowrap;line-height:1.1;
   }
-  .name{font-size:26px;font-weight:700;line-height:1.35;margin-bottom:10px}
+  .name{font-size:26px;font-weight:700;line-height:1.35;margin-bottom:12px}
   .code-line{
-    font-family:var(--mono);font-size:16px;color:var(--ink-soft);
-    letter-spacing:.1em;line-height:1.7;
+    font-family:var(--mono);font-size:21px;font-weight:700;color:var(--ink);
+    letter-spacing:.08em;line-height:1.75;
+  }
+  .code-line .tag{
+    font-size:14px;font-weight:400;letter-spacing:.2em;color:var(--ink-soft);
+    margin-right:8px;
   }
 
   .stamp{
@@ -322,10 +330,10 @@ function card(i){
     .map(b => '<img class="shot" alt="' + esc(i.name||i.code) + 'のラベル" src="' + objUrl(b) + '">').join('');
   const shelves = [sh1(i), sh2(i)].filter(Boolean)
     .map(s => '<div class="shelf">' + esc(s) + '</div>').join('');
-  return (shelves ? '<div class="shelves">' + shelves + '</div>' : '') +
+  return (shelves ? '<div class="shelf-label">棚番</div><div class="shelves">' + shelves + '</div>' : '') +
     '<div class="name">' + esc(i.name || '（商品名なし）') + '</div>' +
-    '<div class="code-line">' + esc(i.code) +
-      (i.jan ? '<br>JAN ' + esc(i.jan) : '') + '</div>' +
+    '<div class="code-line"><span class="tag">コード</span>' + esc(i.code) +
+      (i.jan ? '<br><span class="tag">JAN</span>' + esc(i.jan) : '') + '</div>' +
     (shots ? '<div class="shots">' + shots + '</div>' : '');
 }
 function row(i){
