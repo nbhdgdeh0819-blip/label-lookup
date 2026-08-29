@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#dfe6ea">
+<title>ラベル照合</title>
+<style>
+  :root{
+    --slip:#dfe6ea;
+    --slip-deep:#c7d3da;
+    --ink:#1d2b33;
+    --ink-soft:#5b6f7a;
+    --rule:#9fb2bd;
+    --stamp:#b23a2e;
+    --ok:#2c6650;
+    --mono: ui-monospace,"SF Mono",Menlo,"Courier New",monospace;
+    --sans: -apple-system,BlinkMacSystemFont,"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    background:var(--slip);
+    background-image:repeating-linear-gradient(to bottom,transparent 0 27px,rgba(159,178,189,.28) 27px 28px);
+    color:var(--ink);
+    font-family:var(--sans);
+    -webkit-text-size-adjust:100%;
+    padding:0 14px calc(28px + env(safe-area-inset-bottom));
+  }
+  header{
+    padding:22px 0 14px;
+    display:flex;align-items:baseline;gap:10px;
+    border-bottom:2px solid var(--ink);
+  }
+  h1{margin:0;font-size:19px;letter-spacing:.16em;font-weight:700}
+  .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--ink-soft)}
+
+  nav{display:flex;gap:0;margin:0 0 18px;border-bottom:1px solid var(--rule)}
+  nav button{
+    flex:1;appearance:none;border:0;background:none;
+    font-family:var(--mono);font-size:12px;letter-spacing:.12em;
+    color:var(--ink-soft);padding:13px 0;cursor:pointer;
+    border-bottom:3px solid transparent;
+  }
+  nav button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--stamp)}
+  nav button:focus-visible{outline:2px solid var(--stamp);outline-offset:-2px}
+
+  .slip{
+    background:#f4f8fa;
+    border:1px solid var(--rule);
+    padding:18px 16px 20px;
+    position:relative;
+    box-shadow:0 1px 0 var(--slip-deep);
+  }
+  .slip::after{
+    content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;
+    background-image:radial-gradient(circle,var(--rule) 1px,transparent 1px);
+    background-size:7px 1px;
+  }
+  label{
+    display:block;font-family:var(--mono);font-size:10px;
+    letter-spacing:.18em;color:var(--ink-soft);margin:0 0 6px;
+  }
+  input[type=text],input[type=search]{
+    width:100%;appearance:none;border:0;border-bottom:2px solid var(--ink);
+    background:transparent;padding:6px 2px 8px;
+    font-family:var(--mono);font-size:26px;letter-spacing:.14em;color:var(--ink);
+    border-radius:0;
+  }
+  input:focus{outline:0;border-bottom-color:var(--stamp)}
+  .field{margin-bottom:20px}
+  .field.small input{font-size:17px;letter-spacing:.06em}
+
+  .btn{
+    width:100%;appearance:none;border:2px solid var(--ink);background:var(--ink);
+    color:#f4f8fa;font-family:var(--mono);font-size:14px;letter-spacing:.2em;
+    padding:14px;cursor:pointer;border-radius:0;
+  }
+  .btn.ghost{background:transparent;color:var(--ink)}
+  .btn:active{transform:translateY(1px)}
+  .btn:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
+
+  .result{margin-top:22px}
+  .shot{
+    width:100%;background:#fff;border:1px solid var(--rule);
+    display:block;
+  }
+  .meta{display:flex;gap:12px;align-items:flex-start;margin-top:12px;padding-bottom:4px}
+  .meta .name{font-size:18px;font-weight:700;line-height:1.4;flex:1}
+  .shelf{
+    font-family:var(--mono);font-size:20px;letter-spacing:.1em;
+    border:2px solid var(--ink);padding:5px 10px;white-space:nowrap;
+  }
+  .code-line{font-family:var(--mono);font-size:12px;color:var(--ink-soft);letter-spacing:.12em;margin-top:6px}
+
+  .stamp{
+    position:absolute;top:10px;right:12px;
+    border:3px double var(--stamp);color:var(--stamp);
+    font-size:13px;font-weight:700;letter-spacing:.14em;
+    padding:6px 10px;transform:rotate(-9deg);
+    opacity:.9;pointer-events:none;
+    animation:press .28s ease-out;
+  }
+  .stamp.miss{border-style:dashed}
+  @keyframes press{from{transform:rotate(-9deg) scale(1.5);opacity:0}to{transform:rotate(-9deg) scale(1);opacity:.9}}
+  @media (prefers-reduced-motion:reduce){.stamp{animation:none}}
+
+  .empty{
+    font-size:14px;line-height:1.9;color:var(--ink-soft);
+    padding:26px 2px;
+  }
+  .empty b{color:var(--ink)}
+
+  .row{
+    display:flex;gap:12px;align-items:center;
+    padding:11px 0;border-bottom:1px solid var(--rule);
+  }
+  .row img{width:52px;height:52px;object-fit:cover;background:#fff;border:1px solid var(--rule);flex:none}
+  .row .t{flex:1;min-width:0}
+  .row .t b{display:block;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row .t span{font-family:var(--mono);font-size:11px;color:var(--ink-soft);letter-spacing:.1em}
+  .row button{
+    appearance:none;border:1px solid var(--rule);background:none;color:var(--ink-soft);
+    font-family:var(--mono);font-size:11px;padding:6px 9px;cursor:pointer;border-radius:0;
+  }
+
+  .preview{
+    width:100%;aspect-ratio:4/3;border:1px dashed var(--rule);background:#fff;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--mono);font-size:11px;letter-spacing:.14em;color:var(--ink-soft);
+    overflow:hidden;margin-bottom:8px;
+  }
+  .preview img{width:100%;height:100%;object-fit:contain}
+  .pick{display:block;text-align:center;margin-bottom:22px}
+  .pick input{position:absolute;width:1px;height:1px;opacity:0}
+  .pick .lbl{
+    display:inline-block;border:2px solid var(--ink);padding:11px 22px;
+    font-family:var(--mono);font-size:13px;letter-spacing:.16em;cursor:pointer;
+  }
+  .pick input:focus-visible + .lbl{outline:2px solid var(--stamp);outline-offset:2px}
+  .toast{
+    position:fixed;left:14px;right:14px;bottom:calc(18px + env(safe-area-inset-bottom));
+    background:var(--ok);color:#fff;font-size:14px;padding:13px 15px;
+    text-align:center;letter-spacing:.06em;
+  }
+  [hidden]{display:none !important}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>ラベル照合</h1>
+  <span class="eyebrow">WINE / STOCK</span>
+</header>
+
+<nav role="tablist">
+  <button role="tab" id="t-find" aria-selected="true">照会</button>
+  <button role="tab" id="t-add" aria-selected="false">登録</button>
+  <button role="tab" id="t-list" aria-selected="false">一覧</button>
+</nav>
+
+<!-- 照会 -->
+<section id="v-find">
+  <div class="slip">
+    <div id="findStamp"></div>
+    <div class="field">
+      <label for="q">商品コード / 商品名</label>
+      <input type="search" id="q" placeholder="コードを入力" autocomplete="off"
+             autocapitalize="characters" enterkeyhint="search">
+    </div>
+    <button class="btn" id="go">照 会</button>
+  </div>
+  <div class="result" id="result"></div>
+</section>
+
+<!-- 登録 -->
+<section id="v-add" hidden>
+  <div class="preview" id="prev">写真なし</div>
+  <div class="pick">
+    <input type="file" id="file" accept="image/*" capture="environment">
+    <label class="lbl" for="file">写真を撮る / 選ぶ</label>
+  </div>
+  <div class="slip">
+    <div class="field small">
+      <label for="a-code">商品コード（必須）</label>
+      <input type="text" id="a-code" autocomplete="off" autocapitalize="characters">
+    </div>
+    <div class="field small">
+      <label for="a-name">商品名</label>
+      <input type="text" id="a-name" autocomplete="off">
+    </div>
+    <div class="field small">
+      <label for="a-shelf">棚番</label>
+      <input type="text" id="a-shelf" placeholder="B-3" autocomplete="off" autocapitalize="characters">
+    </div>
+    <button class="btn" id="save">保 存</button>
+  </div>
+</section>
+
+<!-- 一覧 -->
+<section id="v-list" hidden>
+  <div id="rows"></div>
+</section>
+
+<script>
+const $ = s => document.querySelector(s);
+let db, pendingBlob = null, urls = [];
+
+function freeUrls(){ urls.forEach(URL.revokeObjectURL); urls = []; }
+function objUrl(b){ const u = URL.createObjectURL(b); urls.push(u); return u; }
+const norm = s => (s||'').trim().toUpperCase();
+
+/* ---- storage ---- */
+function open(){
+  return new Promise((res,rej)=>{
+    const r = indexedDB.open('label-lookup',1);
+    r.onupgradeneeded = e => {
+      const d = e.target.result;
+      if(!d.objectStoreNames.contains('items')) d.createObjectStore('items',{keyPath:'code'});
+    };
+    r.onsuccess = e => res(e.target.result);
+    r.onerror = () => rej(r.error);
+  });
+}
+function tx(mode){ return db.transaction('items',mode).objectStore('items'); }
+function put(item){ return new Promise((res,rej)=>{ const r=tx('readwrite').put(item); r.onsuccess=res; r.onerror=()=>rej(r.error); }); }
+function del(code){ return new Promise(res=>{ tx('readwrite').delete(code).onsuccess=res; }); }
+function all(){ return new Promise(res=>{ const r=tx('readonly').getAll(); r.onsuccess=()=>res(r.result||[]); }); }
+
+/* ---- image shrink ---- */
+async function shrink(file, max=1400){
+  const bmp = await createImageBitmap(file);
+  const scale = Math.min(1, max/Math.max(bmp.width,bmp.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bmp.width*scale);
+  c.height = Math.round(bmp.height*scale);
+  c.getContext('2d').drawImage(bmp,0,0,c.width,c.height);
+  bmp.close && bmp.close();
+  return new Promise(r => c.toBlob(r,'image/jpeg',0.82));
+}
+
+/* ---- tabs ---- */
+const views = {find:['#t-find','#v-find'], add:['#t-add','#v-add'], list:['#t-list','#v-list']};
+function show(name){
+  for(const [k,[tab,view]] of Object.entries(views)){
+    $(tab).setAttribute('aria-selected', String(k===name));
+    $(view).hidden = k!==name;
+  }
+  if(name==='list') renderList();
+}
+Object.keys(views).forEach(k => $(views[k][0]).onclick = () => show(k));
+
+/* ---- find ---- */
+async function find(){
+  const q = norm($('#q').value);
+  const stamp = $('#findStamp');
+  const out = $('#result');
+  stamp.innerHTML = ''; out.innerHTML = ''; freeUrls();
+  if(!q) return;
+
+  const items = await all();
+  if(!items.length){
+    out.innerHTML = '<p class="empty">まだ1件も登録がありません。<br><b>登録</b>タブで、ラベルの写真と商品コードを追加してください。</p>';
+    return;
+  }
+  const exact = items.find(i => norm(i.code) === q);
+  const hits = exact ? [exact] : items.filter(i => norm(i.code).includes(q) || norm(i.name).includes(q));
+
+  if(!hits.length){
+    stamp.innerHTML = '<span class="stamp miss">該当なし</span>';
+    out.innerHTML = '<p class="empty">このコードは未登録です。<br><b>登録</b>タブから追加できます。</p>';
+    return;
+  }
+  if(hits.length === 1){
+    stamp.innerHTML = '<span class="stamp">照合済</span>';
+    out.innerHTML = card(hits[0]);
+  } else {
+    out.innerHTML = '<p class="empty">' + hits.length + '件みつかりました。</p>' + hits.map(row).join('');
+    bindRows();
+  }
+}
+function card(i){
+  const img = i.image ? '<img class="shot" alt="' + esc(i.name||i.code) + 'のラベル" src="' + objUrl(i.image) + '">' : '';
+  return img +
+    '<div class="meta"><div class="name">' + esc(i.name || '（商品名なし）') + '</div>' +
+    (i.shelf ? '<div class="shelf">' + esc(i.shelf) + '</div>' : '') + '</div>' +
+    '<div class="code-line">' + esc(i.code) + '</div>';
+}
+function row(i){
+  const th = i.image ? '<img alt="" src="' + objUrl(i.image) + '">' : '<img alt="">';
+  return '<div class="row">' + th +
+    '<div class="t"><b>' + esc(i.name || '（商品名なし）') + '</b>' +
+    '<span>' + esc(i.code) + (i.shelf ? ' ・ ' + esc(i.shelf) : '') + '</span></div>' +
+    '<button data-del="' + esc(i.code) + '">削除</button></div>';
+}
+function esc(s){ return (s||'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+$('#go').onclick = find;
+$('#q').addEventListener('keydown', e => { if(e.key==='Enter'){ e.preventDefault(); find(); }});
+
+/* ---- add ---- */
+$('#file').onchange = async e => {
+  const f = e.target.files[0];
+  if(!f) return;
+  pendingBlob = await shrink(f);
+  $('#prev').innerHTML = '<img alt="選んだラベル写真" src="' + objUrl(pendingBlob) + '">';
+};
+$('#save').onclick = async () => {
+  const code = $('#a-code').value.trim();
+  if(!code){ toast('商品コードを入力してください'); $('#a-code').focus(); return; }
+  await put({ code, name:$('#a-name').value.trim(), shelf:$('#a-shelf').value.trim(), image:pendingBlob });
+  toast(code + ' を保存しました');
+  pendingBlob = null;
+  $('#prev').textContent = '写真なし';
+  ['#a-code','#a-name','#a-shelf'].forEach(s => $(s).value = '');
+  $('#file').value = '';
+};
+
+/* ---- list ---- */
+async function renderList(){
+  freeUrls();
+  const items = (await all()).sort((a,b) => a.code.localeCompare(b.code));
+  $('#rows').innerHTML = items.length
+    ? items.map(row).join('')
+    : '<p class="empty">まだ1件も登録がありません。<br><b>登録</b>タブから追加してください。</p>';
+  bindRows();
+}
+function bindRows(){
+  document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    await del(b.dataset.del);
+    toast('削除しました');
+    renderList();
+  });
+}
+
+/* ---- toast ---- */
+let tId;
+function toast(msg){
+  clearTimeout(tId);
+  let el = $('.toast');
+  if(!el){ el = document.createElement('div'); el.className='toast'; document.body.appendChild(el); }
+  el.textContent = msg;
+  tId = setTimeout(() => el.remove(), 2200);
+}
+
+/* ---- boot ---- */
+open().then(d => { db = d; }).catch(() => {
+  document.body.innerHTML = '<p class="empty" style="padding:40px 14px">この画面ではデータを保存できません。ファイルを直接開くか、公開したURLからアクセスしてください。</p>';
+});
+</script>
+</body>
+</html>
