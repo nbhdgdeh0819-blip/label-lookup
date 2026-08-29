@@ -83,15 +83,21 @@
   .btn:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
 
   .result{margin-top:22px}
-  .shots{display:flex;flex-direction:column;gap:8px}
-  .shot{width:100%;background:#fff;border:1px solid var(--rule);display:block}
-  .meta{display:flex;gap:10px;align-items:flex-start;margin-top:12px;flex-wrap:wrap}
-  .meta .name{font-size:18px;font-weight:700;line-height:1.4;flex:1;min-width:60%}
-  .shelf{
-    font-family:var(--mono);font-size:20px;letter-spacing:.1em;
-    border:2px solid var(--ink);padding:5px 10px;white-space:nowrap;
+  .shots{display:flex;flex-direction:column;gap:8px;margin-top:16px}
+  .shot{
+    width:100%;max-height:44vh;object-fit:contain;
+    background:#fff;border:1px solid var(--rule);display:block;
   }
-  .code-line{font-family:var(--mono);font-size:12px;color:var(--ink-soft);letter-spacing:.12em;margin-top:6px}
+  .shelves{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+  .shelf{
+    font-family:var(--mono);font-size:38px;font-weight:700;letter-spacing:.06em;
+    border:3px solid var(--ink);padding:6px 18px;white-space:nowrap;line-height:1.1;
+  }
+  .name{font-size:26px;font-weight:700;line-height:1.35;margin-bottom:10px}
+  .code-line{
+    font-family:var(--mono);font-size:16px;color:var(--ink-soft);
+    letter-spacing:.1em;line-height:1.7;
+  }
 
   .stamp{
     position:absolute;top:10px;right:12px;
@@ -316,9 +322,11 @@ function card(i){
     .map(b => '<img class="shot" alt="' + esc(i.name||i.code) + 'のラベル" src="' + objUrl(b) + '">').join('');
   const shelves = [sh1(i), sh2(i)].filter(Boolean)
     .map(s => '<div class="shelf">' + esc(s) + '</div>').join('');
-  return (shots ? '<div class="shots">' + shots + '</div>' : '') +
-    '<div class="meta"><div class="name">' + esc(i.name || '（商品名なし）') + '</div>' + shelves + '</div>' +
-    '<div class="code-line">' + esc(i.code) + (i.jan ? ' ・ JAN ' + esc(i.jan) : '') + '</div>';
+  return (shelves ? '<div class="shelves">' + shelves + '</div>' : '') +
+    '<div class="name">' + esc(i.name || '（商品名なし）') + '</div>' +
+    '<div class="code-line">' + esc(i.code) +
+      (i.jan ? '<br>JAN ' + esc(i.jan) : '') + '</div>' +
+    (shots ? '<div class="shots">' + shots + '</div>' : '');
 }
 function row(i){
   const b = img1(i);
