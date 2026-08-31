@@ -97,7 +97,8 @@
     font-family:var(--mono);font-size:38px;font-weight:700;letter-spacing:.06em;
     border:3px solid var(--ink);padding:6px 18px;white-space:nowrap;line-height:1.1;
   }
-  .name{font-size:26px;font-weight:700;line-height:1.35;margin-bottom:12px}
+  .name{font-size:26px;font-weight:700;line-height:1.35;margin-bottom:4px}
+  .maker{font-size:19px;color:var(--ink);line-height:1.4;margin-bottom:12px}
   .code-line{
     font-family:var(--mono);font-size:21px;font-weight:700;color:var(--ink);
     letter-spacing:.08em;line-height:1.75;
@@ -220,6 +221,10 @@
       <label for="a-name">商品名</label>
       <input type="text" id="a-name" autocomplete="off">
     </div>
+    <div class="field small">
+      <label for="a-maker">メーカー名</label>
+      <input type="text" id="a-maker" autocomplete="off">
+    </div>
     <div class="pair">
       <div class="field small">
         <label for="a-shelf1">棚番1</label>
@@ -310,7 +315,7 @@ async function find(){
   }
   const exact = items.find(i => norm(i.code)===q || norm(i.jan)===q);
   const hits = exact ? [exact] : items.filter(i =>
-    norm(i.code).includes(q) || norm(i.jan).includes(q) || norm(i.name).includes(q));
+    norm(i.code).includes(q) || norm(i.jan).includes(q) || norm(i.name).includes(q) || norm(i.maker).includes(q));
 
   if(!hits.length){
     stamp.innerHTML = '<span class="stamp miss">該当なし</span>';
@@ -332,6 +337,7 @@ function card(i){
     .map(s => '<div class="shelf">' + esc(s) + '</div>').join('');
   return (shelves ? '<div class="shelf-label">棚番</div><div class="shelves">' + shelves + '</div>' : '') +
     '<div class="name">' + esc(i.name || '（商品名なし）') + '</div>' +
+    (i.maker ? '<div class="maker">' + esc(i.maker) + '</div>' : '') +
     '<div class="code-line"><span class="tag">コード</span>' + esc(i.code) +
       (i.jan ? '<br><span class="tag">JAN</span>' + esc(i.jan) : '') + '</div>' +
     (shots ? '<div class="shots">' + shots + '</div>' : '');
@@ -342,6 +348,7 @@ function row(i){
   const shelves = [sh1(i), sh2(i)].filter(Boolean).join(' / ');
   return '<div class="row">' + th +
     '<div class="t"><b>' + esc(i.name || '（商品名なし）') + '</b>' +
+    (i.maker ? '<span>' + esc(i.maker) + '</span>' : '') +
     '<span>' + esc(i.code) + (i.jan ? ' ・ ' + esc(i.jan) : '') + (shelves ? ' ・ ' + esc(shelves) : '') + '</span></div>' +
     '<button data-edit="' + esc(i.code) + '">編集</button>' +
     '<button data-del="' + esc(i.code) + '">削除</button></div>';
@@ -366,7 +373,7 @@ function resetForm(){
   blob1 = blob2 = null;
   $('#prev1').textContent = '写真1 なし';
   $('#prev2').textContent = '写真2 なし';
-  ['#a-code','#a-jan','#a-name','#a-shelf1','#a-shelf2'].forEach(s => $(s).value = '');
+  ['#a-code','#a-jan','#a-name','#a-maker','#a-shelf1','#a-shelf2'].forEach(s => $(s).value = '');
   $('#file1').value = ''; $('#file2').value = '';
   $('#editing').hidden = true;
 }
@@ -379,6 +386,7 @@ $('#save').onclick = async () => {
     code,
     jan: $('#a-jan').value.trim(),
     name: $('#a-name').value.trim(),
+    maker: $('#a-maker').value.trim(),
     shelf1: $('#a-shelf1').value.trim(),
     shelf2: $('#a-shelf2').value.trim(),
     image1: blob1,
@@ -397,6 +405,7 @@ async function loadForEdit(code){
   $('#a-code').value = i.code;
   $('#a-jan').value = i.jan || '';
   $('#a-name').value = i.name || '';
+  $('#a-maker').value = i.maker || '';
   $('#a-shelf1').value = sh1(i);
   $('#a-shelf2').value = sh2(i);
   $('#editing').textContent = '編集中：' + i.code;
