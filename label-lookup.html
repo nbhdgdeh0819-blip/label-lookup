@@ -123,6 +123,9 @@
     font-family:var(--mono);font-size:11px;padding:6px 8px;cursor:pointer;border-radius:0;flex:none;
   }
 
+  .row button.danger{
+    border-color:var(--stamp);color:#fff;background:var(--stamp);font-weight:700;
+  }
   .shotpair{display:flex;gap:10px;margin-bottom:8px}
   .shotslot{flex:1}
   .preview{
@@ -435,14 +438,25 @@ async function renderList(){
   bindRows();
 }
 function bindRows(){
-  document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
-    const code = b.dataset.del;
-    const item = await get(code);
-    const label = item && item.name ? item.name + '（' + code + '）' : code;
-    if(!confirm(label + ' を削除します。よろしいですか？')) return;
-    await del(code);
-    toast('削除しました');
-    renderList();
+  document.querySelectorAll('[data-del]').forEach(b => {
+    let armed = false, t;
+    b.onclick = async () => {
+      if(!armed){
+        armed = true;
+        b.textContent = '本当に削除？';
+        b.classList.add('danger');
+        t = setTimeout(() => {
+          armed = false;
+          b.textContent = '削除';
+          b.classList.remove('danger');
+        }, 5000);
+        return;
+      }
+      clearTimeout(t);
+      await del(b.dataset.del);
+      toast('削除しました');
+      renderList();
+    };
   });
   document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => loadForEdit(b.dataset.edit));
 }
@@ -456,6 +470,12 @@ function toast(msg){
   el.textContent = msg;
   tId = setTimeout(() => el.remove(), 2200);
 }
+
+/* ---- アプリに戻ったら登録フォームを白紙に戻す ---- */
+document.addEventListener('visibilitychange', () => {
+  if(document.visibilityState === 'visible') resetForm();
+});
+window.addEventListener('pageshow', () => resetForm());
 
 /* ---- boot ---- */
 open().then(d => { db = d; }).catch(() => {
