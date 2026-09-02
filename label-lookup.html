@@ -436,7 +436,11 @@ async function renderList(){
 }
 function bindRows(){
   document.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
-    await del(b.dataset.del);
+    const code = b.dataset.del;
+    const item = await get(code);
+    const label = item && item.name ? item.name + '（' + code + '）' : code;
+    if(!confirm(label + ' を削除します。よろしいですか？')) return;
+    await del(code);
     toast('削除しました');
     renderList();
   });
