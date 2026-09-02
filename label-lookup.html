@@ -57,9 +57,9 @@
     background-image:radial-gradient(circle,var(--rule) 1px,transparent 1px);
     background-size:7px 1px;
   }
-  label{
-    display:block;font-family:var(--mono);font-size:10px;
-    letter-spacing:.18em;color:var(--ink-soft);margin:0 0 6px;
+  label, .flabel{
+    display:block;font-family:var(--mono);font-size:13px;
+    letter-spacing:.16em;color:var(--ink-soft);margin:0 0 6px;
   }
   input[type=text],input[type=search]{
     width:100%;appearance:none;border:0;border-bottom:2px solid var(--ink);
@@ -83,31 +83,15 @@
   .btn:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
 
   .result{margin-top:22px}
-  .shots{display:flex;flex-direction:column;gap:8px;margin-bottom:18px}
+  .val{
+    font-size:24px;color:var(--ink);line-height:1.35;
+    padding:6px 2px 8px;border-bottom:2px solid var(--ink);
+    min-height:46px;word-break:break-word;
+  }
+  .val.mono{font-family:var(--mono);font-weight:700;letter-spacing:.08em}
+  .val.big{font-family:var(--mono);font-weight:700;font-size:30px;letter-spacing:.06em}
   .shot{
-    width:100%;max-height:44vh;object-fit:contain;
-    background:#fff;border:1px solid var(--rule);display:block;
-  }
-  .shelf-label{
-    font-family:var(--mono);font-size:15px;font-weight:700;letter-spacing:.2em;
-    color:var(--ink);margin-bottom:7px;
-  }
-  .shelves{display:flex;gap:10px;flex-wrap:wrap}
-  .shelf{
-    font-family:var(--mono);font-size:38px;font-weight:700;letter-spacing:.06em;
-    border:3px solid var(--ink);padding:6px 18px;white-space:nowrap;line-height:1.1;
-  }
-  .name{font-size:26px;font-weight:700;line-height:1.35;margin-bottom:4px}
-  .maker{font-size:19px;color:var(--ink);line-height:1.4}
-  .code-line{
-    font-family:var(--mono);font-size:21px;font-weight:700;color:var(--ink);
-    letter-spacing:.08em;line-height:1.75;margin-bottom:18px;
-  }
-  .maker, .name{margin-bottom:18px}
-  .name{margin-bottom:4px}
-  .code-line .tag{
-    font-size:14px;font-weight:400;letter-spacing:.2em;color:var(--ink-soft);
-    margin-right:8px;
+    width:100%;height:100%;object-fit:contain;display:block;
   }
 
   .stamp{
@@ -333,16 +317,24 @@ async function find(){
   }
 }
 function card(i){
-  const shots = [img1(i), img2(i)].filter(Boolean)
-    .map(b => '<img class="shot" alt="' + esc(i.name||i.code) + 'のラベル" src="' + objUrl(b) + '">').join('');
-  const shelves = [sh1(i), sh2(i)].filter(Boolean)
-    .map(s => '<div class="shelf">' + esc(s) + '</div>').join('');
-  return (shots ? '<div class="shots">' + shots + '</div>' : '') +
-    '<div class="code-line"><span class="tag">コード</span>' + esc(i.code) +
-      (i.jan ? '<br><span class="tag">JAN</span>' + esc(i.jan) : '') + '</div>' +
-    '<div class="name">' + esc(i.name || '（商品名なし）') + '</div>' +
-    (i.maker ? '<div class="maker">' + esc(i.maker) + '</div>' : '') +
-    (shelves ? '<div class="shelf-label">棚番</div><div class="shelves">' + shelves + '</div>' : '');
+  const slot = (b, n) => '<div class="shotslot"><div class="preview">' +
+    (b ? '<img class="shot" alt="写真' + n + '" src="' + objUrl(b) + '">' : '写真' + n + ' なし') +
+    '</div></div>';
+  const field = (lab, val, cls) =>
+    '<div class="field"><span class="flabel">' + lab + '</span>' +
+    '<div class="val ' + (cls || '') + '">' + (val ? esc(val) : '') + '</div></div>';
+
+  return '<div class="shotpair">' + slot(img1(i), 1) + slot(img2(i), 2) + '</div>' +
+    '<div class="slip" style="margin-top:16px">' +
+      field('商品コード', i.code, 'mono') +
+      field('JANコード', i.jan, 'mono') +
+      field('商品名', i.name) +
+      field('メーカー名', i.maker) +
+      '<div class="pair">' +
+        field('棚番1', sh1(i), 'big') +
+        field('棚番2', sh2(i), 'big') +
+      '</div>' +
+    '</div>';
 }
 function row(i){
   const b = img1(i);
