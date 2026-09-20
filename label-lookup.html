@@ -239,6 +239,12 @@
 <!-- 一覧 -->
 <section id="v-list" hidden>
   <div id="rows"></div>
+  <div class="slip" style="margin-top:20px">
+    <div class="field small"><span class="flabel">バックアップ（機種変更用）</span></div>
+    <button class="btn" id="exportBtn">書き出し</button>
+    <button class="btn ghost" id="importBtn">読み込み</button>
+    <input type="file" id="importFile" accept=".json,application/json" hidden>
+  </div>
 </section>
 
 <script>
@@ -463,6 +469,69 @@ function bindRows(){
   });
   document.querySelectorAll('[data-edit]').forEach(b => b.onclick = () => loadForEdit(b.dataset.edit));
 }
+
+
+/* ---- backup: export / import ---- */
+const toDataUrl = b => new Promise(r => { const f = new FileReader(); f.onload = () => r(f.result); f.readAsDataURL(b); });
+async function fromDataUrl(u){ return u ? (await fetch(u)).blob() : null; }
+
+$('#exportBtn').onclick = async () => {
+  const items = await all();
+  if(!items.length){ toast('書き出すデータがありません'); return; }
+  toast('書き出し中…');
+  const out = [];
+  for(const i of items){
+    const b1 = img1(i), b2 = img2(i);
+    out.push({
+      code:i.code, jan:i.jan||'', name:i.name||'', maker:i.maker||'',
+      shelf1:sh1(i), shelf2:sh2(i),
+      image1: b1 ? await toDataUrl(b1) : null,
+      image2: b2 ? await toDataUrl(b2) : null
+    });
+  }
+  const d = new Date();
+  const stamp = d.getFullYear() + String(d.getMonth()+1).padStart(2,'0') + String(d.getDate()).padStart(2,'0');
+  const fname = 'uenaka-backup-' + stamp + '.json';
+  const file = new File([JSON.stringify({app:'label-lookup', version:1, items:out})], fname, {type:'application/json'});
+  try{
+    if(navigator.canShare && navigator.canShare({files:[file]})){
+      await navigator.share({files:[file], title:fname});
+      toast(items.length + '件を書き出しました');
+      return;
+    }
+  }catch(e){ if(e.name === 'AbortError') return; }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(file); a.download = fname;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(a.href), 5000);
+  toast(items.length + '件を書き出しました');
+};
+
+$('#importBtn').onclick = () => $('#importFile').click();
+$('#importFile').onchange = async e => {
+  const f = e.target.files[0]; if(!f) return;
+  try{
+    const data = JSON.parse(await f.text());
+    const list = Array.isArray(data) ? data : data.items;
+    if(!Array.isArray(list)) throw new Error('bad');
+    let n = 0;
+    for(const i of list){
+      if(!i || !i.code) continue;
+      await put({
+        code:String(i.code), jan:i.jan||'', name:i.name||'', maker:i.maker||'',
+        shelf1:i.shelf1||'', shelf2:i.shelf2||'',
+        image1: await fromDataUrl(i.image1),
+        image2: await fromDataUrl(i.image2)
+      });
+      n++;
+    }
+    toast(n + '件を読み込みました');
+    renderList();
+  }catch(err){
+    toast('このファイルは読み込めません');
+  }
+  e.target.value = '';
+};
 
 /* ---- toast ---- */
 let tId;
