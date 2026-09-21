@@ -225,6 +225,10 @@
       <label for="a-maker">メーカー名</label>
       <textarea id="a-maker" rows="1" autocomplete="off"></textarea>
     </div>
+    <div class="field small">
+      <label for="a-size">容量（ml）</label>
+      <input type="text" id="a-size" inputmode="numeric" placeholder="750" autocomplete="off">
+    </div>
     <div class="pair">
       <div class="field small">
         <label for="a-shelf1">棚番1</label>
@@ -364,6 +368,7 @@ function card(i){
       field('JANコード', i.jan, 'mono') +
       field('商品名', i.name) +
       field('メーカー名', i.maker) +
+      field('容量', i.size ? i.size + ' ml' : '') +
       '<div class="pair">' +
         field('棚番1', sh1(i), 'big') +
         field('棚番2', sh2(i), 'big') +
@@ -374,10 +379,11 @@ function row(i){
   const b = img1(i);
   const th = b ? '<img alt="" src="' + objUrl(b) + '">' : '<img alt="">';
   const shelves = [sh1(i), sh2(i)].filter(Boolean).join(' / ');
+  const size = i.size ? i.size + 'ml' : '';
   return '<div class="row">' + th +
     '<div class="t"><b>' + esc(i.name || '（商品名なし）') + '</b>' +
     (i.maker ? '<span>' + esc(i.maker) + '</span>' : '') +
-    '<span>' + esc(i.code) + (i.jan ? ' ・ ' + esc(i.jan) : '') + (shelves ? ' ・ ' + esc(shelves) : '') + '</span></div>' +
+    '<span>' + esc(i.code) + (i.jan ? ' ・ ' + esc(i.jan) : '') + (size ? ' ・ ' + esc(size) : '') + (shelves ? ' ・ ' + esc(shelves) : '') + '</span></div>' +
     '<button data-edit="' + esc(i.code) + '">編集</button>' +
     '<button data-del="' + esc(i.code) + '">削除</button></div>';
 }
@@ -401,7 +407,7 @@ function resetForm(){
   blob1 = blob2 = null;
   $('#prev1').textContent = '写真1 なし';
   $('#prev2').textContent = '写真2 なし';
-  ['#a-code','#a-jan','#a-name','#a-maker','#a-shelf1','#a-shelf2'].forEach(s => $(s).value = '');
+  ['#a-code','#a-jan','#a-name','#a-maker','#a-size','#a-shelf1','#a-shelf2'].forEach(s => $(s).value = '');
   $('#file1').value = ''; $('#file2').value = '';
   grow($('#a-name')); grow($('#a-maker'));
   $('#editing').hidden = true;
@@ -416,6 +422,7 @@ $('#save').onclick = async () => {
     jan: $('#a-jan').value.trim(),
     name: $('#a-name').value.trim(),
     maker: $('#a-maker').value.trim(),
+    size: $('#a-size').value.replace(/[^0-9]/g,''),
     shelf1: $('#a-shelf1').value.trim(),
     shelf2: $('#a-shelf2').value.trim(),
     image1: blob1,
@@ -435,6 +442,7 @@ async function loadForEdit(code){
   $('#a-jan').value = i.jan || '';
   $('#a-name').value = i.name || '';
   $('#a-maker').value = i.maker || '';
+  $('#a-size').value = i.size || '';
   $('#a-shelf1').value = sh1(i);
   $('#a-shelf2').value = sh2(i);
   grow($('#a-name')); grow($('#a-maker'));
@@ -490,7 +498,7 @@ $('#exportBtn').onclick = async () => {
   for(const i of items){
     const b1 = img1(i), b2 = img2(i);
     out.push({
-      code:i.code, jan:i.jan||'', name:i.name||'', maker:i.maker||'',
+      code:i.code, jan:i.jan||'', name:i.name||'', maker:i.maker||'', size:i.size||'',
       shelf1:sh1(i), shelf2:sh2(i),
       image1: b1 ? await toDataUrl(b1) : null,
       image2: b2 ? await toDataUrl(b2) : null
@@ -525,7 +533,7 @@ $('#importFile').onchange = async e => {
     for(const i of list){
       if(!i || !i.code) continue;
       await put({
-        code:String(i.code), jan:i.jan||'', name:i.name||'', maker:i.maker||'',
+        code:String(i.code), jan:i.jan||'', name:i.name||'', maker:i.maker||'', size:i.size||'',
         shelf1:i.shelf1||'', shelf2:i.shelf2||'',
         image1: await fromDataUrl(i.image1),
         image2: await fromDataUrl(i.image2)
