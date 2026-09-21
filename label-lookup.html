@@ -348,7 +348,9 @@ async function find(){
   }
   if(hits.length === 1){
     stamp.innerHTML = '<span class="stamp">照合済</span>';
-    out.innerHTML = card(hits[0]);
+    out.innerHTML = card(hits[0]) +
+      '<button class="btn ghost" style="margin-top:12px" data-edit="' + esc(hits[0].code) + '">この商品を編集</button>';
+    bindRows();
   } else {
     out.innerHTML = '<p class="empty">' + hits.length + '件みつかりました。</p>' + hits.map(row).join('');
     bindRows();
