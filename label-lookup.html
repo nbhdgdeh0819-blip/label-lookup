@@ -261,6 +261,7 @@
 <script>
 const $ = s => document.querySelector(s);
 let db, blob1 = null, blob2 = null, urls = [];
+let editingCode = null;
 
 function freeUrls(){ urls.forEach(URL.revokeObjectURL); urls = []; }
 function objUrl(b){ const u = URL.createObjectURL(b); urls.push(u); return u; }
@@ -413,12 +414,26 @@ function resetForm(){
   $('#file1').value = ''; $('#file2').value = '';
   grow($('#a-name')); grow($('#a-maker'));
   $('#editing').hidden = true;
+  editingCode = null;
 }
 $('#clear').onclick = resetForm;
 
+$('#a-code').addEventListener('change', async () => {
+  const code = $('#a-code').value.trim();
+  if(!code || code === editingCode) return;
+  const exist = await get(code);
+  if(exist) toast(code + ' はすでに登録済みです');
+});
 $('#save').onclick = async () => {
   const code = $('#a-code').value.trim();
   if(!code){ toast('商品コードを入力してください'); $('#a-code').focus(); return; }
+  if(code !== editingCode){
+    const exist = await get(code);
+    if(exist){
+      const nm = exist.name ? '（' + exist.name + '）' : '';
+      if(!confirm(code + nm + ' はすでに登録済みです。\n上書きしますか？')) return;
+    }
+  }
   await put({
     code,
     jan: $('#a-jan').value.trim(),
@@ -448,6 +463,7 @@ async function loadForEdit(code){
   $('#a-shelf1').value = sh1(i);
   $('#a-shelf2').value = sh2(i);
   grow($('#a-name')); grow($('#a-maker'));
+  editingCode = i.code;
   $('#editing').textContent = '編集中：' + i.code;
   $('#editing').hidden = false;
   show('add');
