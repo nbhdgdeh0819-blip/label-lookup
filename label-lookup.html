@@ -145,6 +145,13 @@
     font-family:var(--mono);font-size:11px;letter-spacing:.1em;cursor:pointer;
   }
   .pick input:focus-visible + .lbl{outline:2px solid var(--stamp);outline-offset:2px}
+  .verify{
+    margin-top:10px;padding:12px;border:2px solid var(--ink);
+    text-align:center;font-weight:700;letter-spacing:.06em;
+  }
+  .verify span{display:inline-block;margin-top:4px;font-weight:400;font-size:13px;font-family:var(--mono)}
+  .verify.ok{border-color:var(--ok);color:var(--ok)}
+  .verify.ng{border-color:var(--stamp);color:var(--stamp)}
   .editing{
     font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--stamp);
     margin-bottom:10px;
@@ -182,6 +189,7 @@
     <button class="btn" id="go">照 会</button>
     <button class="btn ghost" id="scanBtn">写真でバーコード読み取り</button>
     <input type="file" id="scanFile" accept="image/*" capture="environment" hidden>
+    <input type="file" id="verifyFile" accept="image/*" capture="environment" hidden>
   </div>
   <div class="result" id="result"></div>
 </section>
@@ -262,6 +270,7 @@
 const $ = s => document.querySelector(s);
 let db, blob1 = null, blob2 = null, urls = [];
 let editingCode = null;
+let verifyTarget = null;
 
 function freeUrls(){ urls.forEach(URL.revokeObjectURL); urls = []; }
 function objUrl(b){ const u = URL.createObjectURL(b); urls.push(u); return u; }
@@ -350,7 +359,11 @@ async function find(){
   if(hits.length === 1){
     stamp.innerHTML = '<span class="stamp">照合済</span>';
     out.innerHTML = card(hits[0]) +
+      '<button class="btn" style="margin-top:12px" id="verifyBtn">バーコードで照合</button>' +
+      '<div id="verifyOut"></div>' +
       '<button class="btn ghost" style="margin-top:12px" data-edit="' + esc(hits[0].code) + '">この商品を編集</button>';
+    verifyTarget = hits[0];
+    bindVerify(hits[0]);
     bindRows();
   } else {
     out.innerHTML = '<p class="empty">' + hits.length + '件みつかりました。</p>' + hits.map(row).join('');
@@ -647,6 +660,34 @@ bindScan('#scanBtn2', '#scanFile2', code => {
   toast(code + ' を読み取りました');
 });
 
+
+/* ---- 照合：現物のバーコードと一致するか ---- */
+function digits(v){ return String(v || '').replace(/[^0-9]/g, ''); }
+function bindVerify(item){
+  const btn = $('#verifyBtn');
+  if(!btn) return;
+  btn.onclick = () => $('#verifyFile').click();
+}
+$('#verifyFile').onchange = async e => {
+  const f = e.target.files[0];
+  e.target.value = '';
+  const out = $('#verifyOut');
+  if(!f || !out) return;
+  const item = verifyTarget;
+  out.innerHTML = '<div class="hint">読み取り中…</div>';
+  let code = null;
+  try{ code = await readBarcode(f); }catch(err){}
+  if(!code){
+    out.innerHTML = '<div class="verify ng">読み取れませんでした</div>';
+    return;
+  }
+  const scanned = digits(code);
+  const ok = item && (digits(item.jan) === scanned || digits(item.code) === scanned);
+  out.innerHTML = ok
+    ? '<div class="verify ok">◯ 一致しました<br><span>' + esc(code) + '</span></div>'
+    : '<div class="verify ng">✕ 一致しません<br><span>読み取り ' + esc(code) + ' / 登録 ' + esc(item && item.jan ? item.jan : 'JANなし') + '</span></div>';
+};
+
 /* ---- toast ---- */
 let tId;
 function toast(msg){
@@ -659,7 +700,7 @@ function toast(msg){
 
 /* ---- アプリに戻ったら登録フォームを白紙に戻す ---- */
 let skipReset = false;
-['#file1','#file2','#scanFile','#scanFile2','#importFile'].forEach(sel => {
+['#file1','#file2','#scanFile','#scanFile2','#verifyFile','#importFile'].forEach(sel => {
   const el = $(sel);
   if(el) el.addEventListener('click', () => { skipReset = true; });
 });
