@@ -161,6 +161,18 @@
     background:var(--ok);color:#fff;font-size:14px;padding:13px 15px;
     text-align:center;letter-spacing:.06em;z-index:9;
   }
+  .grp{padding-bottom:22px;margin-bottom:22px;border-bottom:1px solid var(--rule)}
+  .ocrstat{font-family:var(--mono);font-size:12px;letter-spacing:.06em;color:var(--ink-soft);margin-top:10px;line-height:1.6}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+  .chip{
+    appearance:none;border:1px solid var(--ink);background:#fff;color:var(--ink);
+    font-family:var(--sans);font-size:16px;letter-spacing:.02em;line-height:1.3;
+    min-height:44px;padding:8px 12px;border-radius:0;cursor:pointer;text-align:left;word-break:break-all;
+  }
+  .chip small{font-family:var(--mono);font-size:11px;letter-spacing:.08em;color:var(--stamp);margin-left:8px}
+  .chip.all{background:var(--ink);color:#f4f8fa}
+  .chip.used{opacity:.45}
+  .chip:focus-visible{outline:2px solid var(--stamp);outline-offset:2px}
   [hidden]{display:none !important}
 </style>
 </head>
@@ -215,19 +227,27 @@
   </div>
 
   <div class="slip" style="margin-top:16px">
-    <div class="field small">
+    <div class="field small grp">
       <label for="a-code">商品コード（必須）</label>
       <input type="text" id="a-code" autocomplete="off" autocapitalize="characters">
+      <button class="btn ghost" id="ocrCodeBtn" type="button">写真で商品コード読み取り</button>
+      <input type="file" id="ocrCodeFile" accept="image/*" capture="environment" hidden>
+      <div class="ocrstat" id="ocrCodeStat" hidden></div>
+      <div class="chips" id="ocrCodeOut"></div>
     </div>
-    <div class="field small">
+    <div class="field small grp">
       <label for="a-jan">JANコード</label>
       <input type="text" id="a-jan" inputmode="numeric" autocomplete="off">
+      <button class="btn ghost" id="scanBtn2" type="button">写真でJANコード読み取り</button>
+      <input type="file" id="scanFile2" accept="image/*" capture="environment" hidden>
     </div>
-    <button class="btn ghost" id="scanBtn2">写真でバーコード読み取り</button>
-    <input type="file" id="scanFile2" accept="image/*" capture="environment" hidden>
-    <div class="field small">
+    <div class="field small grp">
       <label for="a-name">商品名</label>
       <textarea id="a-name" rows="1" autocomplete="off"></textarea>
+      <button class="btn ghost" id="ocrNameBtn" type="button">写真で商品名読み取り</button>
+      <input type="file" id="ocrNameFile" accept="image/*" capture="environment" hidden>
+      <div class="ocrstat" id="ocrNameStat" hidden></div>
+      <div class="chips" id="ocrNameOut"></div>
     </div>
     <div class="field small">
       <label for="a-maker">メーカー名</label>
@@ -428,6 +448,7 @@ function resetForm(){
   grow($('#a-name')); grow($('#a-maker'));
   $('#editing').hidden = true;
   editingCode = null;
+  clearOcr();
 }
 $('#clear').onclick = resetForm;
 
@@ -688,6 +709,197 @@ $('#verifyFile').onchange = async e => {
     : '<div class="verify ng">✕ 一致しません<br><span>読み取り ' + esc(code) + ' / 登録 ' + esc(item && item.jan ? item.jan : 'JANなし') + '</span></div>';
 };
 
+
+/* ---- OCR: 写真から商品コード・商品名を読み取り（Tesseract.js・端末内で処理） ---- */
+const OCR_JS = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+const CJK = '[\u3040-\u30ff\u3400-\u9fff]';
+const CJK_GAP = new RegExp('(' + CJK + ')[ \\t]+(?=' + CJK + ')', 'g');
+
+function ocrTidy(s){
+  return String(s || '').normalize('NFKC').replace(CJK_GAP, '$1').replace(/[ \t]{2,}/g, ' ').trim();
+}
+function ocrCodeCandidates(text){
+  const seen = new Set(), out = [];
+  ocrTidy(text).split(/[\s,;:|()\[\]{}]+/).forEach(t => {
+    t = t.replace(/^[-_./]+|[-_./]+$/g, '');
+    if(t.length < 3 || t.length > 20 || !/\d/.test(t) || seen.has(t)) return;
+    seen.add(t); out.push(t);
+  });
+  out.sort((a, b) => (b.match(/\d/g) || []).length - (a.match(/\d/g) || []).length);
+  return out.slice(0, 8);
+}
+function ocrNameCandidates(text){
+  const seen = new Set(), out = [];
+  String(text || '').split(/\n+/).forEach(line => {
+    const t = ocrTidy(line);
+    const good = (t.match(/[A-Za-z0-9\u00c0-\u024f\u3040-\u30ff\u3400-\u9fff]/g) || []).length;
+    if(t.length < 2 || good < 2 || good / t.length < 0.5 || seen.has(t)) return;
+    seen.add(t); out.push(t);
+  });
+  return out.slice(0, 12);
+}
+
+let tessP = null;
+function loadTesseract(){
+  if(window.Tesseract) return Promise.resolve();
+  if(!tessP){
+    tessP = new Promise((res, rej) => {
+      const el = document.createElement('script');
+      el.src = OCR_JS;
+      el.onload = res;
+      el.onerror = () => { tessP = null; rej(new Error('load')); };
+      document.head.appendChild(el);
+    });
+  }
+  return tessP;
+}
+
+let ocrStat = null;
+const ocrWorkers = {};
+function ocrLog(m){
+  if(!ocrStat || !m || !m.status) return;
+  const names = {
+    'loading tesseract core':'準備中',
+    'initializing tesseract':'準備中',
+    'loading language traineddata':'辞書を読み込み中（初回のみ長め）',
+    'initializing api':'準備中',
+    'recognizing text':'読み取り中'
+  };
+  if(!names[m.status]) return;
+  ocrStat.textContent = names[m.status] + '… ' + (typeof m.progress === 'number' ? Math.round(m.progress * 100) + '%' : '');
+}
+async function getOcrWorker(kind){
+  if(ocrWorkers[kind]) return ocrWorkers[kind];
+  const w = await Tesseract.createWorker(kind === 'code' ? 'eng' : 'jpn+eng', 1, { logger: ocrLog });
+  if(kind === 'code'){
+    await w.setParameters({
+      tessedit_pageseg_mode: '11',
+      tessedit_char_whitelist: '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-_./'
+    });
+  }
+  ocrWorkers[kind] = w;
+  return w;
+}
+
+/* 読み取り前に縮小・グレー化・コントラスト調整 */
+async function prepForOcr(file){
+  const im = await imgFromFile(file);
+  const W = im.naturalWidth, H = im.naturalHeight;
+  const scale = Math.min(1, 2000 / Math.max(W, H));
+  const c = document.createElement('canvas');
+  c.width = Math.round(W * scale);
+  c.height = Math.round(H * scale);
+  const g = c.getContext('2d', { willReadFrequently: true });
+  g.drawImage(im, 0, 0, c.width, c.height);
+  URL.revokeObjectURL(im.src);
+  const d = g.getImageData(0, 0, c.width, c.height);
+  const p = d.data, hist = new Uint32Array(256), n = p.length / 4;
+  for(let i = 0; i < p.length; i += 4){
+    const y = (p[i] * 299 + p[i+1] * 587 + p[i+2] * 114) / 1000 | 0;
+    p[i] = p[i+1] = p[i+2] = y;
+    hist[y]++;
+  }
+  let lo = 0, hi = 255, acc = 0;
+  for(let v = 0; v < 256; v++){ acc += hist[v]; if(acc >= n * 0.02){ lo = v; break; } }
+  acc = 0;
+  for(let v = 255; v >= 0; v--){ acc += hist[v]; if(acc >= n * 0.02){ hi = v; break; } }
+  if(hi - lo > 20){
+    const k = 255 / (hi - lo);
+    for(let i = 0; i < p.length; i += 4){
+      const y = Math.max(0, Math.min(255, (p[i] - lo) * k));
+      p[i] = p[i+1] = p[i+2] = y;
+    }
+  }
+  g.putImageData(d, 0, 0);
+  return c;
+}
+
+function showChips(outEl, items, onPick){
+  outEl.innerHTML = '';
+  items.forEach(it => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'chip' + (it.all ? ' all' : '');
+    b.textContent = it.text;
+    if(it.tag){
+      const s = document.createElement('small');
+      s.textContent = it.tag;
+      b.appendChild(s);
+    }
+    b.onclick = () => { onPick(it); b.classList.add('used'); };
+    outEl.appendChild(b);
+  });
+}
+function pickCode(it){
+  if(it.jan){ $('#a-jan').value = it.text; toast('JANコードに入れました'); return; }
+  const el = $('#a-code');
+  el.value = it.text;
+  el.dispatchEvent(new Event('change'));
+  toast('商品コードに入れました');
+}
+function pickName(it){
+  const el = $('#a-name');
+  const cur = el.value.trim();
+  el.value = cur ? cur + ' ' + it.text : it.text;
+  grow(el);
+  toast('商品名に入れました');
+}
+function clearOcr(){
+  ['#ocrCodeOut', '#ocrNameOut'].forEach(s => { const el = $(s); if(el) el.innerHTML = ''; });
+  ['#ocrCodeStat', '#ocrNameStat'].forEach(s => { const el = $(s); if(el){ el.hidden = true; el.textContent = ''; } });
+}
+
+function bindOcr(kind, btnSel, fileSel, statSel, outSel){
+  const btn = $(btnSel), statEl = $(statSel), outEl = $(outSel);
+  btn.onclick = () => $(fileSel).click();
+  $(fileSel).onchange = async e => {
+    const f = e.target.files[0];
+    e.target.value = '';
+    if(!f) return;
+    ocrStat = statEl;
+    statEl.hidden = false;
+    statEl.textContent = '準備中…（初回は読み込みに少し時間がかかります）';
+    outEl.innerHTML = '';
+    btn.disabled = true;
+    try{
+      await loadTesseract();
+      const worker = await getOcrWorker(kind);
+      const canvas = await prepForOcr(f);
+      const res = await worker.recognize(canvas);
+      const text = (res && res.data && res.data.text) || '';
+      if(kind === 'code'){
+        const items = ocrCodeCandidates(text).map(t => {
+          const jan = /^\d{13}$/.test(t);
+          return { text:t, jan:jan, tag: jan ? 'JAN' : '' };
+        });
+        if(!items.length){
+          statEl.textContent = '文字が見つかりませんでした。近づけて、明るい場所で撮り直してみてください';
+        } else {
+          statEl.textContent = 'タップで入力欄に入ります。違っていたら入力欄で直してください';
+          showChips(outEl, items, pickCode);
+        }
+      } else {
+        const lines = ocrNameCandidates(text);
+        if(!lines.length){
+          statEl.textContent = '文字が見つかりませんでした。近づけて、明るい場所で撮り直してみてください';
+        } else {
+          const items = lines.map(t => ({ text:t }));
+          if(lines.length > 1) items.unshift({ text:'全部入れる', all:true, joined:lines.join(' ') });
+          statEl.textContent = 'タップで商品名に入ります。読み間違いは入力欄で直してください';
+          showChips(outEl, items, it => pickName(it.all ? { text: it.joined } : it));
+        }
+      }
+    }catch(err){
+      statEl.textContent = '読み取れませんでした。ネット接続を確認して、もう一度試してください';
+    }finally{
+      btn.disabled = false;
+      ocrStat = null;
+    }
+  };
+}
+bindOcr('code', '#ocrCodeBtn', '#ocrCodeFile', '#ocrCodeStat', '#ocrCodeOut');
+bindOcr('name', '#ocrNameBtn', '#ocrNameFile', '#ocrNameStat', '#ocrNameOut');
+
 /* ---- toast ---- */
 let tId;
 function toast(msg){
@@ -700,7 +912,7 @@ function toast(msg){
 
 /* ---- アプリに戻ったら登録フォームを白紙に戻す ---- */
 let skipReset = false;
-['#file1','#file2','#scanFile','#scanFile2','#verifyFile','#importFile'].forEach(sel => {
+['#file1','#file2','#scanFile','#scanFile2','#verifyFile','#importFile','#ocrCodeFile','#ocrNameFile'].forEach(sel => {
   const el = $(sel);
   if(el) el.addEventListener('click', () => { skipReset = true; });
 });
