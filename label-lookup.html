@@ -72,7 +72,7 @@
   }
   textarea{
     font-family:var(--sans);font-size:20px;letter-spacing:.02em;
-    line-height:1.4;resize:none;overflow:hidden;display:block;
+    line-height:1.4;resize:none;overflow:hidden;display:block;min-height:2.2em;
   }
   input:focus,textarea:focus{outline:0;border-bottom-color:var(--stamp)}
   .field{margin-bottom:20px}
@@ -352,6 +352,7 @@ function show(name){
     $(view).hidden = k!==name;
   }
   if(name==='list') renderList();
+  if(name==='add'){ grow($('#a-name')); grow($('#a-maker')); requestAnimationFrame(() => { grow($('#a-name')); grow($('#a-maker')); }); }
 }
 Object.keys(views).forEach(k => $(views[k][0]).onclick = () => show(k));
 
